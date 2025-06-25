@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>画像からキャラを生成</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.13.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    #preview {
+      max-width: 300px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .stats {
+      margin-top: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    li {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>画像からキャラクターを生成！</h2>
+  <input type="file" id="imageInput" accept="image/*"><br>
+  <img id="preview" />
+  <div class="stats" id="result"></div>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const preview = document.getElementById('preview');
+    const result = document.getElementById('result');
+
+    let model;
+
+    function seededRandom(seed) {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    }
+
+    function hashString(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0; // Convert to 32bit int
+      }
+      return Math.abs(hash);
+    }
+
+    function labelToStats(label, imageSeed) {
+      label = label.toLowerCase();
+      const seed = hashString(label + imageSeed);
+      const rand = (i) => Math.floor(seededRandom(seed + i) * 20 - 10); // -10～+9
+
+      let base = { type: "謎の存在", atk: 40, def: 40, mag: 40, spd: 40 };
+      if (label.includes('dog') || label.includes('cat')) {
+        base = { type: "戦士", atk: 80, def: 70, mag: 30, spd: 50 };
+      } else if (label.includes('flower') || label.includes('plant')) {
+        base = { type: "魔法使い", atk: 40, def: 30, mag: 90, spd: 60 };
+      } else if (label.includes('mountain') || label.includes('sea')) {
+        base = { type: "タンク", atk: 50, def: 90, mag: 20, spd: 30 };
+      } else if (label.includes('bird') || label.includes('airplane')) {
+        base = { type: "スピード型", atk: 50, def: 30, mag: 40, spd: 90 };
+      } else if (label.includes('person') || label.includes('face')) {
+        base = { type: "バランス型", atk: 60, def: 60, mag: 60, spd: 60 };
+      }
+
+      return {
+        type: base.type,
+        atk: base.atk + rand(1),
+        def: base.def + rand(2),
+        mag: base.mag + rand(3),
+        spd: base.spd + rand(4),
+      };
+    }
+
+    async function loadModel() {
+      model = await mobilenet.load();
+    }
+
+    imageInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const imageSeed = reader.result;
+        preview.src = imageSeed;
+        preview.onload = async () => {
+          const predictions = await model.classify(preview);
+          const bestLabel = predictions[0].className;
+          const stats = labelToStats(bestLabel, imageSeed);
+
+          result.innerHTML = `
+            <h3>分類: ${bestLabel}</h3>
+            <p><strong>タイプ:</strong> ${stats.type}</p>
+            <ul>
+              <li>攻撃力: ${stats.atk}</li>
+              <li>防御力: ${stats.def}</li>
+              <li>魔法力: ${stats.mag}</li>
+              <li>素早さ: ${stats.spd}</li>
+            </ul>
+          `;
+        };
+      };
+      reader.readAsDataURL(file);
+    });
+
+    loadModel();
+  </script>
+</body>
+</html>
