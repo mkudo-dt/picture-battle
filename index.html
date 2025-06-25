@@ -44,6 +44,23 @@
     const imageInput = document.getElementById('imageInput');
     const preview = document.getElementById('preview');
     const result = document.getElementById('result');
+    const labelTranslation = {
+	  "Labrador retriever": "ラブラドール・レトリバー",
+	  "golden retriever": "ゴールデン・レトリバー",
+	  "tabby cat": "トラ猫",
+	  "Persian cat": "ペルシャ猫",
+	  "daisy": "ヒナギク",
+	  "sunflower": "ヒマワリ",
+	  "mountain": "山",
+	  "seashore": "海辺",
+	  "valley": "谷",
+	  "airliner": "旅客機",
+	  "person": "人物",
+	  "face": "顔",
+	  "banana": "バナナ",
+	  "soccer ball": "サッカーボール"
+	};
+
 
     let model;
 
@@ -105,20 +122,24 @@
         const imageSeed = reader.result;
         preview.src = imageSeed;
         preview.onload = async () => {
-          const predictions = await model.classify(preview);
-          const bestLabel = predictions[0].className;
-          const stats = labelToStats(bestLabel, imageSeed);
+			const predictions = await model.classify(preview);
+			const bestLabel = predictions[0].className;
+			const bestProb = predictions[0].probability;
 
-          result.innerHTML = `
-            <h3>分類: ${bestLabel}</h3>
-            <p><strong>タイプ:</strong> ${stats.type}</p>
-            <ul>
-              <li>攻撃力: ${stats.atk}</li>
-              <li>防御力: ${stats.def}</li>
-              <li>魔法力: ${stats.mag}</li>
-              <li>素早さ: ${stats.spd}</li>
-            </ul>
-          `;
+			const jpLabel = labelTranslation[bestLabel] || bestLabel;
+			const stats = labelToStats(bestLabel, imageSeed);
+
+			result.innerHTML = `
+			  <h3>分類: ${jpLabel} (${bestLabel})</h3>
+			  <p><strong>信頼度:</strong> ${(bestProb * 100).toFixed(2)}%</p>
+			  <p><strong>タイプ:</strong> ${stats.type}</p>
+			  <ul>
+			    <li>攻撃力: ${stats.atk}</li>
+			    <li>防御力: ${stats.def}</li>
+			    <li>魔法力: ${stats.mag}</li>
+			    <li>素早さ: ${stats.spd}</li>
+			  </ul>
+			`;
         };
       };
       reader.readAsDataURL(file);
