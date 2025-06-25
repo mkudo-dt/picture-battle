@@ -61,32 +61,36 @@
       return Math.abs(hash);
     }
 
-    function labelToStats(label, imageSeed) {
-      label = label.toLowerCase();
-      const seed = hashString(label + imageSeed);
-      const rand = (i) => Math.floor(seededRandom(seed + i) * 20 - 10); // -10～+9
+	function labelToStats(label, imageSeed) {
+	  const seed = hashString(label + imageSeed);
+	  
+	  // ステータスを一貫して 0〜999 にばらつかせる
+	  const rand = (offset) => Math.floor(seededRandom(seed + offset) * 1000); // 0〜999
 
-      let base = { type: "謎の存在", atk: 40, def: 40, mag: 40, spd: 40 };
-      if (label.includes('dog') || label.includes('cat')) {
-        base = { type: "戦士", atk: 80, def: 70, mag: 30, spd: 50 };
-      } else if (label.includes('flower') || label.includes('plant')) {
-        base = { type: "魔法使い", atk: 40, def: 30, mag: 90, spd: 60 };
-      } else if (label.includes('mountain') || label.includes('sea')) {
-        base = { type: "タンク", atk: 50, def: 90, mag: 20, spd: 30 };
-      } else if (label.includes('bird') || label.includes('airplane')) {
-        base = { type: "スピード型", atk: 50, def: 30, mag: 40, spd: 90 };
-      } else if (label.includes('person') || label.includes('face')) {
-        base = { type: "バランス型", atk: 60, def: 60, mag: 60, spd: 60 };
-      }
+	  // タイプはラベルから決定（任意の対応）
+	  let type = "謎の存在";
+	  label = label.toLowerCase();
+	  if (label.includes('dog') || label.includes('cat')) {
+	    type = "戦士";
+	  } else if (label.includes('flower') || label.includes('plant')) {
+	    type = "魔法使い";
+	  } else if (label.includes('mountain') || label.includes('sea')) {
+	    type = "タンク";
+	  } else if (label.includes('bird') || label.includes('airplane')) {
+	    type = "スピード型";
+	  } else if (label.includes('person') || label.includes('face')) {
+	    type = "バランス型";
+	  }
 
-      return {
-        type: base.type,
-        atk: base.atk + rand(1),
-        def: base.def + rand(2),
-        mag: base.mag + rand(3),
-        spd: base.spd + rand(4),
-      };
-    }
+	  return {
+	    type: type,
+	    atk: rand(1),
+	    def: rand(2),
+	    mag: rand(3),
+	    spd: rand(4),
+	  };
+	}
+
 
     async function loadModel() {
       model = await mobilenet.load();
